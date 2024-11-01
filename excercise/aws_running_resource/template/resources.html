@@ -10,36 +10,43 @@
             border-collapse: collapse;
         }
         table, th, td {
-            border: 1px solid black;
+            border: 1px solid #FFFFFF;
         }
         th, td {
             padding: 10px;
-            text-align: left;
-            color: lightblue;
+            text-align: center;
+            color: #00008B;
         }
         th {
-            background-color: #f2f2f2;
+            background-color: #FFC0CB;
+        }
+        tr:nth-child(even) td {
+            background-color: #DDA0DD; /* Plum */
+        }
+        h2, h1 {
+            color: #00008B;
+            text-align: center;
         }
     </style>
 </head>
-<body bgcolor="#ff6347">
+<body bgcolor="#9370DB">
     <h1>Running AWS Resources</h1>
 
-    {% for resource_type, instances in resources.items() %}
+    {% for resource_type, resources in resources.items() %}
         <h2>{{ resource_type }}</h2>
-        {% if instances %}
+        {% if resources %}
         <table>
             <thead>
                 <tr>
-                    {% for key in instances[0].keys() %}
+                    {% for key in resources[0].keys() %}
                         <th>{{ key }}</th>
                     {% endfor %}
                 </tr>
             </thead>
             <tbody>
-                {% for instance in instances %}
+                {% for resource in resources %}
                     <tr>
-                        {% for value in instance.values() %}
+                        {% for value in resource.values() %}
                             <td>{{ value }}</td>
                         {% endfor %}
                     </tr>

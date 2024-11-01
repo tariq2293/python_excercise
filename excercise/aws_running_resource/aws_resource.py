@@ -10,8 +10,11 @@ def list_running_resources():
     regions = ['us-east-1', 'ap-south-1']
     resources = {
         'EC2': [],
-        'ECS': []
+        'ECS': [],
+        'route53': []
     }
+
+    # EC2
     for region in regions:
         session = boto3.Session(region_name=region)
 
@@ -34,13 +37,14 @@ def list_running_resources():
                         'Name': name_tag,
                         'State': instance['State']['Name'],
                         'Public IP': instance.get('PublicIpAddress', 'N/A'),
+                        'Instance Type': instance.get('InstanceType', 'N/A'),
                         'VPC ID': instance.get('VpcId', 'N/A'),
                         'Public DNS Name': instance.get('PublicDnsName', 'N/A'),
                         'Region': ec2_region
                     })
 
+    # ECS
     suffixes = ('-dev', '-test')
-
     for region in regions:
         session = boto3.Session(region_name=region)
         ecs = session.client('ecs')
@@ -61,7 +65,7 @@ def list_running_resources():
                         task_def = ecs.describe_task_definition(taskDefinition=task_def_arn)
 
                         task_identifier = (
-                        task_def['taskDefinition']['family'], task_def['taskDefinition']['revision'])
+                            task_def['taskDefinition']['family'], task_def['taskDefinition']['revision'])
 
                         if task_identifier not in seen_tasks:
                             seen_tasks.add(task_identifier)
@@ -73,13 +77,53 @@ def list_running_resources():
                                 else:
                                     image_name, image_tag = image, 'latest'
 
+                                ecs_region = image_name.split('.')
+
                                 resources['ECS'].append({
                                     'Cluster Name': cluster_name,
                                     'Task Definition': task_def['taskDefinition']['family'],
                                     'Container Name': container_def['name'],
                                     'Image Name': image_name,
-                                    'Image Tag': image_tag
+                                    'Image Tag': image_tag,
+                                    'Region': ecs_region[3]
                                 })
+
+    # Route53
+    client = boto3.client('route53')
+
+    domain_name = 'robogebra.ai'
+    keywords = ['dev', 'test']
+
+    response = client.list_hosted_zones()
+    hosted_zone_id = None
+    for zone in response['HostedZones']:
+        if zone['Name'].strip('.') == domain_name:
+            hosted_zone_id = zone['Id'].split('/')[-1]
+            break
+
+    response = client.list_resource_record_sets(HostedZoneId=hosted_zone_id)
+    records = response['ResourceRecordSets']
+
+    filtered_records = []
+    for record in records:
+        if any(keyword in record['Name'] for keyword in keywords):
+            filtered_records.append(record)
+
+    for record in filtered_records:
+        if 'ResourceRecords' in record:
+            values = [rr['Value'] for rr in record.get('ResourceRecords', [])]
+            resources['route53'].append({
+                'Name': record['Name'],
+                'Type': record['Type'],
+                'Values': ', '.join(values)
+            })
+        elif 'AliasTarget' in record:
+            alias_value = record['AliasTarget']['DNSName']
+            resources['route53'].append({
+                'Name': record['Name'],
+                'Type': record['Type'],
+                'Values': alias_value
+            })
 
     return resources
 
