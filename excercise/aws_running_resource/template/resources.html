@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Running Resources</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            color: lightblue;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body bgcolor="#ff6347">
+    <h1>Running AWS Resources</h1>
+
+    {% for resource_type, instances in resources.items() %}
+        <h2>{{ resource_type }}</h2>
+        {% if instances %}
+        <table>
+            <thead>
+                <tr>
+                    {% for key in instances[0].keys() %}
+                        <th>{{ key }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for instance in instances %}
+                    <tr>
+                        {% for value in instance.values() %}
+                            <td>{{ value }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <p>No {{ resource_type }} resources found.</p>
+        {% endif %}
+    {% endfor %}
+</body>
+</html>
